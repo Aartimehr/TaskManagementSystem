@@ -1,63 +1,67 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task');
 const jwt = require('jsonwebtoken');
+const Task = require('../models/Task'); 
 
-// Middleware to verify the JWT token
-const protect = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded; // Adds the user ID to the request object
-      next();
-    } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
+// THE PROTECT MIDDLEWARE (Extracts req.user.id)
+const protect = (req, res, next) => {
+    let token = req.headers.authorization;
+
+    if (token && token.startsWith('Bearer')) {
+        try {
+            token = token.split(' ')[1]; // Remove 'Bearer' prefix
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            
+            // This creates the req.user.id you need!
+            req.user = decoded; 
+            next();
+        } catch (error) {
+            return res.status(401).json({ message: "Not authorized, token failed" });
+        }
+    } else {
+        return res.status(401).json({ message: "No token, authorization denied" });
     }
-  }
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
-  }
 };
 
-// @route   POST /api/tasks
-// @desc    Create a new task
-router.post('/', protect, async (req, res) => {
-  try {
-    const { title, description } = req.body;
-    const newTask = new Task({
-      title,
-      description,
-      user: req.user.id // Links the task to the logged-in user
-    });
-    const savedTask = await newTask.save();
-    res.status(201).json(savedTask);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// @route   GET /api/tasks
-// @desc    Get all tasks for the logged-in user
+// GET ALL TASKS (Filtered by req.user.id)
 router.get('/', protect, async (req, res) => {
-  try {
-    const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    try {
+        // Only fetch tasks belonging to the logged-in user
+        const tasks = await Task.findAll({ where: { UserId: req.user.id } });
+        res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ message: "Server Error" });
+    }
 });
 
-// @route   DELETE /api/tasks/:id
-// @desc    Delete a task
-router.delete('/:id', protect, async (req, res) => {
-  try {
-    await Task.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Task deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+// CREATE NEW TASK (Assigned to req.user.id)
+router.post('/', protect, async (req, res) => {
+    try {
+        const { title, description, scheduledTime } = req.body;
+        const newTask = await Task.create({
+            title,
+            description,
+            scheduledTime,
+            status: 'pending',
+            UserId: req.user.id // Links task to the user from the token
+        });
+        res.status(201).json(newTask);
+    } catch (err) {
+        res.status(400).json({ message: "Could not create task" });
+    }
+});
+
+// UPDATE TASK STATUS (Complete/Undo)
+router.put('/:id', protect, async (req, res) => {
+    try {
+        const { status } = req.body;
+        await Task.update({ status }, { 
+            where: { id: req.params.id, UserId: req.user.id } 
+        });
+        res.json({ message: "Task updated" });
+    } catch (err) {
+        res.status(500).json({ message: "Update failed" });
+    }
 });
 
 module.exports = router;

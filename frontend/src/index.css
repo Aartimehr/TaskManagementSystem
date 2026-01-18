@@ -60,3 +60,18 @@ button {
 }
 
 button:hover { opacity: 0.9; }
+
+.dashboard-container { padding: 40px; font-family: sans-serif; background: #f9f9f9; min-height: 100vh; }
+.stats-container { display: flex; gap: 20px; margin-top: 20px; }
+.stat-box { padding: 15px 30px; background: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-weight: bold; }
+.stat-box.pending { color: #f39c12; border-bottom: 4px solid #f39c12; }
+.stat-box.completed { color: #27ae60; border-bottom: 4px solid #27ae60; }
+
+.task-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; }
+.task-list { list-style: none; padding: 0; }
+.task-card { background: #fff; padding: 20px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.task-done { background: #e8f5e9; border-left: 5px solid #2ecc71; }
+
+.task-actions { display: flex; gap: 10px; }
+.done-btn { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+.del-btn { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
